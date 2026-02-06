@@ -1,9 +1,7 @@
 package request
 
-type Request struct{
-	Category string `json:"category"`
-	Parameters struct{
-		Query string `json:"query"`
-		Action string `json:"action"`
-	}
+type Request struct {
+	Category   string `json:"category"`
+	Action     string `json:"action"`
+	Parameters map[string]string
 }
