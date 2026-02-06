@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"roland/config"
@@ -18,7 +19,7 @@ type Parser struct {
 	vocab llama.Vocab
 
 	logger *logger.Logger
-	cfg *config.Config
+	cfg    *config.Config
 }
 
 func NewParser(cfg *config.Config, logger *logger.Logger) (*Parser, error) {
@@ -63,14 +64,14 @@ func NewParser(cfg *config.Config, logger *logger.Logger) (*Parser, error) {
 	}
 
 	return &Parser{
-		model: model,
-		lctx: lctx,
+		model:  model,
+		lctx:   lctx,
 		logger: logger,
-		vocab: llama.ModelGetVocab(model),
-		cfg: cfg,
+		vocab:  llama.ModelGetVocab(model),
+		cfg:    cfg,
 	}, nil
 }
- 
+
 func (p *Parser) Parse(phrase string) (*request.Request, error) {
 	tokens := llama.Tokenize(p.vocab, phrase, true, false)
 
@@ -97,4 +98,21 @@ func (p *Parser) Parse(phrase string) (*request.Request, error) {
 
 		batch = llama.BatchGetOne([]llama.Token{token})
 	}
-} 
+
+	p.logger.Info("got response from llm, decoding...",
+		zap.String("response", response.String()))
+
+	var request request.Request
+
+	if err := json.NewDecoder(&response).Decode(&request); err != nil {
+		p.logger.Error("failed decode response",
+			zap.String("response", response.String()),
+			zap.Error(err))
+
+		return nil, fmt.Errorf("failed decode response: %w", err)
+	}
+
+	p.logger.Info("successfully decoded response")
+
+	return &request, nil
+}
