@@ -1,11 +1,12 @@
 package router
 
 import (
-	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"roland/entity/request"
 	"roland/logger"
+	"roland/router/worker"
 	"strings"
 
 	"go.uber.org/zap"
@@ -16,8 +17,10 @@ var (
 )
 
 type WorkerRouter struct {
-	logger *logger.Logger
-	cmds   map[string]map[string]string
+	logger   *logger.Logger
+	worker   *worker.Worker
+	cmds     map[string]map[string]string
+	stopChan chan string
 }
 
 func NewWorkerRouter(logger *logger.Logger) *WorkerRouter {
@@ -26,11 +29,24 @@ func NewWorkerRouter(logger *logger.Logger) *WorkerRouter {
 	}
 }
 
-func (wr *WorkerRouter) RouteRequest(req *request.Request) error {
+func (wr *WorkerRouter) StopListen(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			wr.logger.Info("stop router listener")
+
+			return
+		case session := <-wr.stopChan:
+			wr.worker.StopCmd(session)
+		}
+	}
+}
+
+func (wr *WorkerRouter) RouteRequest(session string, req *request.Request) error {
 	actions := wr.cmds[req.Category]
 	cmd := actions[req.Action]
 
-	newcmd, err := setupCMD(cmd, req.Parameters)
+	chunks, err := setupCMD(cmd, req.Parameters)
 	if err != nil {
 		wr.logger.Error("failed setup cmd",
 			zap.String("cmd", cmd),
@@ -39,9 +55,12 @@ func (wr *WorkerRouter) RouteRequest(req *request.Request) error {
 		return fmt.Errorf("failed setup cmd: %w", err)
 	}
 
+	go wr.worker.StartCmd(session, chunks)
+
+	return nil
 }
 
-func setupCMD(cmd string, parameters map[string]string) (string, error) {
+func setupCMD(cmd string, parameters map[string]string) ([]string, error) {
 	tokens := strings.Split(cmd, " ")
 
 	newTokens := make([]string, len(tokens))
@@ -52,7 +71,7 @@ func setupCMD(cmd string, parameters map[string]string) (string, error) {
 
 			value, ok := parameters[trimmedKey]
 			if !ok {
-				return "", ErrNotFoundParameter
+				return nil, ErrNotFoundParameter
 			}
 
 			newTokens[i] = value
@@ -61,16 +80,5 @@ func setupCMD(cmd string, parameters map[string]string) (string, error) {
 		}
 	}
 
-	var buffer bytes.Buffer
-
-	for _, token := range newTokens {
-		buffer.WriteString(token)
-
-		buffer.WriteRune(' ')
-	}
-
-	respcmd := buffer.String()
-	respcmd = respcmd[:len(respcmd)]
-
-	return respcmd, nil
+	return newTokens, nil
 }
