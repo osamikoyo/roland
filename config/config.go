@@ -5,4 +5,5 @@ type Config struct {
 	LLMLibPath     string                       `yaml:"llm_lib_path"`
 	ResponseLength int32                        `yaml:"response_length"`
 	CMDS           map[string]map[string]string `yaml:"cmds"`
+	SaveCMDOutput  bool                         `yaml:"save_cmd_output"`
 }
