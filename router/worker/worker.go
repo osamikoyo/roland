@@ -10,8 +10,8 @@ import (
 type Worker struct {
 	logger *logger.Logger
 
-	mu sync.Mutex
-	jobs   map[string]*Job
+	mu   sync.Mutex
+	jobs map[string]*Job
 }
 
 func NewWorker(logger *logger.Logger) *Worker {
