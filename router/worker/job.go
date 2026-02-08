@@ -7,13 +7,15 @@ import (
 )
 
 type Job struct {
-	Cmd     *exec.Cmd
-	Status  string
+	Cmd    *exec.Cmd
+	Status string
 
 	Output string
+
+	cancel context.CancelFunc
 }
 
-func SetupJob(chunks []string) (*Job, context.CancelFunc) {
+func SetupJob(chunks []string) *Job {
 	command, args := chunks[0], chunks[0:]
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -24,16 +26,17 @@ func SetupJob(chunks []string) (*Job, context.CancelFunc) {
 	cmd.Stderr = os.Stdout
 
 	return &Job{
-		Cmd: cmd,
+		Cmd:    cmd,
 		Status: "created",
-	}, cancel
+		cancel: cancel,
+	}
 }
 
 func (j *Job) Run() error {
 	j.Status = "started"
 
-	if err := j.Cmd.Run();err != nil{
-		j.Status = "error"	
+	if err := j.Cmd.Run(); err != nil {
+		j.Status = "error"
 
 		return err
 	}
