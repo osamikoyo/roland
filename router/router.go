@@ -1,7 +1,6 @@
 package router
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"roland/entity/request"
@@ -20,25 +19,11 @@ type WorkerRouter struct {
 	logger   *logger.Logger
 	worker   *worker.Worker
 	cmds     map[string]map[string]string
-	stopChan chan string
 }
 
 func NewWorkerRouter(logger *logger.Logger) *WorkerRouter {
 	return &WorkerRouter{
 		logger: logger,
-	}
-}
-
-func (wr *WorkerRouter) StopListen(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			wr.logger.Info("stop router listener")
-
-			return
-		case session := <-wr.stopChan:
-			wr.worker.StopCmd(session)
-		}
 	}
 }
 
@@ -81,4 +66,8 @@ func setupCMD(cmd string, parameters map[string]string) ([]string, error) {
 	}
 
 	return newTokens, nil
+}
+
+func (wr *WorkerRouter) StopSession(session string) {
+	wr.worker.StopCmd(session)
 }
