@@ -1,11 +1,14 @@
 package worker
 
 import (
+	"errors"
 	"roland/logger"
 	"sync"
 
 	"go.uber.org/zap"
 )
+
+var ErrNotFound = errors.New("not found session")
 
 type Worker struct {
 	logger *logger.Logger
@@ -39,10 +42,22 @@ func (w *Worker) StartCmd(sessionName string, chunks []string) {
 	}
 }
 
-func (w *Worker) StopCmd(sessionName string) {
+func (w *Worker) StopCmd(sessionName string) error {
 	w.mu.Lock()
 
-	w.jobs[sessionName].cancel()
+	job, ok := w.jobs[sessionName]
+	if !ok {
+		w.logger.Error("not found session",
+			zap.String("session_name", sessionName))
+
+		w.mu.Unlock()
+
+		return ErrNotFound
+	}
+
+	job.cancel()
 
 	w.mu.Unlock()
+
+	return nil
 }
