@@ -16,9 +16,9 @@ var (
 )
 
 type WorkerRouter struct {
-	logger   *logger.Logger
-	worker   *worker.Worker
-	cmds     map[string]map[string]string
+	logger *logger.Logger
+	worker *worker.Worker
+	cmds   map[string]map[string]string
 }
 
 func NewWorkerRouter(logger *logger.Logger) *WorkerRouter {
