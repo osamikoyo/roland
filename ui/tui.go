@@ -12,9 +12,9 @@ var (
 	QueryStyle = lipgloss.NewStyle().Align(lipgloss.Center)
 )
 
-type Window struct{
+type Window struct {
 	listening bool
-	Query string
+	Query     string
 }
 
 func (w *Window) Init() tea.Cmd {
@@ -24,7 +24,7 @@ func (w *Window) Init() tea.Cmd {
 func (w *Window) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String(){
+		switch msg.String() {
 		case "q", "ctrl+c":
 			return w, tea.Quit
 		case "m":
@@ -38,7 +38,7 @@ func (w *Window) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (w *Window) View() string {
 	var buff bytes.Buffer
-	
+
 	title := "Roland\n"
 
 	title = TitleStyle.Render()
