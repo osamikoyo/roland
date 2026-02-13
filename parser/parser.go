@@ -27,11 +27,11 @@ func NewParser(cfg *config.Config, logger *logger.Logger) (*Parser, error) {
 		zap.Any("cfg", cfg))
 
 	logger.Info("load llama library",
-		zap.String("path", cfg.LLMLibPath))
+		zap.String("path", cfg.LLMs.Parser))
 
-	if err := llama.Load(cfg.LLMLibPath); err != nil {
+	if err := llama.Load(cfg.LLMs.Parser); err != nil {
 		logger.Error("failed load llama library",
-			zap.String("path", cfg.LLMLibPath),
+			zap.String("path", cfg.LLMs.Parser),
 			zap.Error(err))
 
 		return nil, fmt.Errorf("failed load llama library: %w", err)
@@ -42,12 +42,12 @@ func NewParser(cfg *config.Config, logger *logger.Logger) (*Parser, error) {
 	llama.Init()
 
 	logger.Info("load model",
-		zap.String("path", cfg.ModelFile))
+		zap.String("path", cfg.LLMs.Parser))
 
-	model, err := llama.ModelLoadFromFile(cfg.ModelFile, llama.ModelDefaultParams())
+	model, err := llama.ModelLoadFromFile(cfg.LLMs.Parser, llama.ModelDefaultParams())
 	if err != nil {
 		logger.Error("failed load model from file",
-			zap.String("path", cfg.ModelFile),
+			zap.String("path", cfg.LLMs.Parser),
 			zap.Error(err))
 
 		return nil, fmt.Errorf("failed load model from file: %w", err)
