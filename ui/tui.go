@@ -1,15 +1,27 @@
 package ui
 
 import (
-	"bytes"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 var (
-	TitleStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#baacc7")).Align(lipgloss.Top)
-	QueryStyle = lipgloss.NewStyle().Align(lipgloss.Center)
+	TitleStyle = lipgloss.NewStyle().
+			Bold(true).
+			Align(lipgloss.Top).
+			MarginTop(1).
+			MarginLeft(10).
+			Foreground(lipgloss.Color("5"))
+
+	MutedStyle = lipgloss.NewStyle().
+			Bold(true).
+			MarginTop(1)
+
+	QueryStyle = lipgloss.NewStyle().
+	Align(lipgloss.Left).
+	MarginTop(1)
 )
 
 type Window struct {
@@ -37,15 +49,22 @@ func (w *Window) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (w *Window) View() string {
-	var buff bytes.Buffer
+	var builder strings.Builder
 
 	title := "Roland\n"
+	var listening string
 
-	title = TitleStyle.Render()
+	if w.listening {
+		listening = MutedStyle.Foreground(lipgloss.Color("7")).Render("Unmuted\n")
+	} else {
+		listening = MutedStyle.Foreground(lipgloss.Color("1")).Render("muted\n")
+	}
 
-	buff.WriteString(title)
+	builder.WriteString(TitleStyle.Render(title))
 
-	query := QueryStyle.Render(w.Query)
+	builder.WriteString(listening)
 
-	return buff.String()
+	builder.WriteString(QueryStyle.Render(w.Query))
+
+	return builder.String()
 }
