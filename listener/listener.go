@@ -1,7 +1,6 @@
 package listener
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"roland/config"
@@ -19,7 +18,7 @@ type Listener struct {
 	outBound chan string
 }
 
-func NewListener(cfg *config.Config, logger *logger.Logger) (*Listener, error) {
+func NewListener(cfg *config.Config, logger *logger.Logger, outbound chan string) (*Listener, error) {
 	logger.Info("setup model")
 
 	model, err := vosk.NewModel(cfg.LLMs.Listener)
@@ -47,7 +46,7 @@ func NewListener(cfg *config.Config, logger *logger.Logger) (*Listener, error) {
 	}, nil
 }
 
-func (lis *Listener) Start(ctx context.Context) error {
+func (lis *Listener) Start() error {
 	lis.logger.Info("init portaudio")
 
 	if err := portaudio.Initialize(); err != nil {
@@ -79,6 +78,15 @@ func (lis *Listener) Start(ctx context.Context) error {
 			zap.Error(err))
 
 		return fmt.Errorf("failed open stream: %w", err)
+	}
+
+	lis.logger.Info("start stream")
+
+	if err = stream.Start(); err != nil {
+		lis.logger.Error("failed start stream",
+			zap.Error(err))
+
+		return fmt.Errorf("failed start stream: %w", err)
 	}
 
 	return nil
