@@ -13,6 +13,30 @@ import (
 	"go.uber.org/zap"
 )
 
+const SystemPrompt = `Receive a command from the user and categorize it strictly in JSON.
+
+ Possible categories:
+- search: web search or information
+- music: start/control music
+- app_launch: open an app/website
+- system: turn off the computer, volume, screenshot, etc.
+- weather: weather
+- time: time/date
+- reminder: reminder
+- other: unknown, ask for clarification
+
+Return ONLY one JSON structure like that:
+{
+ "category": "music",
+ "parameters": {
+ "query": "90s rock",
+ "action": "play"
+ },
+}
+
+the command is %s: 
+`
+
 type Parser struct {
 	model llama.Model
 	lctx  llama.Context
@@ -73,6 +97,8 @@ func NewParser(cfg *config.Config, logger *logger.Logger) (*Parser, error) {
 }
 
 func (p *Parser) Parse(phrase string) (*request.Request, error) {
+	phrase = fmt.Sprintf(SystemPrompt, phrase)
+
 	tokens := llama.Tokenize(p.vocab, phrase, true, false)
 
 	batch := llama.BatchGetOne(tokens)
@@ -115,4 +141,8 @@ func (p *Parser) Parse(phrase string) (*request.Request, error) {
 	p.logger.Info("successfully decoded response")
 
 	return &request, nil
+}
+
+func (p *Parser) Close() {
+	llama.Close()
 }
