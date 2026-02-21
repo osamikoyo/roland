@@ -13,4 +13,19 @@ type Window struct {
 }
 
 func NewWindow(logger *logger.Logger) *Window {
+	tui := newTui()
+	
+	return &Window{
+		ui: tui,
+		programm: tea.NewProgram(tui),
+		logger: logger,
+	}
+}
+
+func (w *Window) SetQuery(query string) {
+	w.ui.Query = query
+} 
+
+func (w *Window) IsListening() bool {
+	return w.ui.listening
 }
