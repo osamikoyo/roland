@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"roland/config"
 	"roland/logger"
@@ -29,7 +30,21 @@ func NewCore(cfg *config.Config, logger *logger.Logger, inbound chan string) (*C
 		return nil, fmt.Errorf("failed setup parser: %w", err)
 	}
 
+	logger.Info("setup router")
+	
 	router := router.NewWorkerRouter(logger)
 
+	logger.Info("setup window")
+
+	window := ui.NewWindow(logger)
+
+	return &Core{
+		window: window,
+		router: router,
+		parser: parser,
+	}, nil
+}
+
+func (c *Core) Start(ctx context.Context) {
 	
 }
