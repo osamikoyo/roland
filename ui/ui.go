@@ -34,8 +34,8 @@ type Tui struct {
 	Output string
 }
 
-func (w *Tui) IsListening() bool {
-	return w.listening
+func newTui() *Tui {
+	return &Tui{}
 }
 
 func (w *Tui) Init() tea.Cmd {
