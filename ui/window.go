@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"io"
 	"roland/logger"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -14,18 +15,27 @@ type Window struct {
 
 func NewWindow(logger *logger.Logger) *Window {
 	tui := newTui()
-	
+
 	return &Window{
-		ui: tui,
+		ui:       tui,
 		programm: tea.NewProgram(tui),
-		logger: logger,
+		logger:   logger,
 	}
 }
 
 func (w *Window) SetQuery(query string) {
 	w.ui.Query = query
-} 
+}
 
 func (w *Window) IsListening() bool {
 	return w.ui.listening
+}
+
+func (w *Window) NewSession(key string, stderr, stdout io.ReadWriter) {
+	w.ui.sessions[key] = &Session{
+		StdErr: stderr,
+		StdOut: stdout,
+	}
+
+	w.programm.Send(nil)
 }
