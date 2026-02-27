@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"roland/entity/session"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -27,11 +28,12 @@ var (
 	Border(lipgloss.NormalBorder(), true, true, true, true).
 	BorderForeground(lipgloss.Color("5"))
 )
-
 type Tui struct {
 	listening bool
 	Query     string
 	Output string
+
+	sessions map[string]*session.Session
 }
 
 func newTui() *Tui {
@@ -43,6 +45,10 @@ func (w *Tui) Init() tea.Cmd {
 }
 
 func (w *Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if msg == nil{
+		return w, nil
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
