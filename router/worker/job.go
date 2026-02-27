@@ -2,7 +2,7 @@ package worker
 
 import (
 	"context"
-	"os"
+	"io"
 	"os/exec"
 )
 
@@ -15,15 +15,15 @@ type Job struct {
 	cancel context.CancelFunc
 }
 
-func SetupJob(chunks []string) *Job {
+func SetupJob(chunks []string, stderr, stdout io.ReadWriter) *Job {
 	command, args := chunks[0], chunks[0:]
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	cmd := exec.CommandContext(ctx, command, args...)
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stdout
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
 
 	return &Job{
 		Cmd:    cmd,
