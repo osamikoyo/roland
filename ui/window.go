@@ -2,6 +2,7 @@ package ui
 
 import (
 	"io"
+	"roland/entity/session"
 	"roland/logger"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -32,7 +33,7 @@ func (w *Window) IsListening() bool {
 }
 
 func (w *Window) NewSession(key string, stderr, stdout io.ReadWriter) {
-	w.ui.sessions[key] = &Session{
+	w.ui.sessions[key] = &session.Session{
 		StdErr: stderr,
 		StdOut: stdout,
 	}
