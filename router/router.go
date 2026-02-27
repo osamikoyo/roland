@@ -3,6 +3,7 @@ package router
 import (
 	"errors"
 	"fmt"
+	"io"
 	"roland/entity/request"
 	"roland/logger"
 	"roland/router/worker"
@@ -27,7 +28,7 @@ func NewWorkerRouter(logger *logger.Logger) *WorkerRouter {
 	}
 }
 
-func (wr *WorkerRouter) RouteRequest(session string, req *request.Request) error {
+func (wr *WorkerRouter) RouteRequest(session string, req *request.Request, stderr, stdout io.ReadWriter) error {
 	actions := wr.cmds[req.Category]
 	cmd := actions[req.Action]
 
@@ -40,7 +41,7 @@ func (wr *WorkerRouter) RouteRequest(session string, req *request.Request) error
 		return fmt.Errorf("failed setup cmd: %w", err)
 	}
 
-	go wr.worker.StartCmd(session, chunks)
+	go wr.worker.StartCmd(session, chunks, stderr, stdout)
 
 	return nil
 }
@@ -68,6 +69,6 @@ func setupCMD(cmd string, parameters map[string]string) ([]string, error) {
 	return newTokens, nil
 }
 
-func (wr *WorkerRouter) StopSession(session string) {
-	wr.worker.StopCmd(session)
+func (wr *WorkerRouter) StopSession(key string) {
+	wr.worker.StopCmd(key)
 }
