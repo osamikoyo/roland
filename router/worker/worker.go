@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"io"
 	"roland/logger"
 	"sync"
 
@@ -24,8 +25,8 @@ func NewWorker(logger *logger.Logger) *Worker {
 	}
 }
 
-func (w *Worker) StartCmd(sessionName string, chunks []string) {
-	job := SetupJob(chunks)
+func (w *Worker) StartCmd(sessionName string, chunks []string, stderr, stdout io.ReadWriter) {
+	job := SetupJob(chunks, stderr, stdout)
 
 	w.mu.Lock()
 
