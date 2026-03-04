@@ -1,87 +1,138 @@
 package ui
 
 import (
-	"roland/entity/session"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 )
 
-var (
-	TitleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Align(lipgloss.Top).
-			MarginTop(1).
-			MarginLeft(10).
-			Foreground(lipgloss.Color("5"))
+type styles struct {
+	query       lipgloss.Style
+	doc         lipgloss.Style
+	highlight   lipgloss.Style
+	inactiveTab lipgloss.Style
+	activeTab   lipgloss.Style
+	window      lipgloss.Style
+}
 
-	MutedStyle = lipgloss.NewStyle().
-			Bold(true).
-			MarginTop(1)
+func newStyles(bgIsDark bool) *styles {
+	lightDark := lipgloss.LightDark(bgIsDark)
 
-	QueryStyle = lipgloss.NewStyle().
-	Align(lipgloss.Left).
-	MarginTop(1)
+	inactiveTabBorder := tabBorderWithBottom("┴", "─", "┴")
+	activeTabBorder := tabBorderWithBottom("┘", " ", "└")
+	highlightColor := lightDark(lipgloss.Color("#874BFD"), lipgloss.Color("#7D56F4"))
 
-	OutputStyle = lipgloss.NewStyle().
-	Border(lipgloss.NormalBorder(), true, true, true, true).
-	BorderForeground(lipgloss.Color("5"))
-)
+	s := new(styles)
+	s.doc = lipgloss.NewStyle().
+		Padding(1, 2, 1, 2)
+	s.inactiveTab = lipgloss.NewStyle().
+		Border(inactiveTabBorder, true).
+		BorderForeground(highlightColor).
+		Padding(0, 1)
+	s.activeTab = s.inactiveTab.
+		Border(activeTabBorder, true)
+	s.window = lipgloss.NewStyle().
+		BorderForeground(highlightColor).
+		Padding(2, 0).
+		Align(lipgloss.Center).
+		Border(lipgloss.NormalBorder()).
+		UnsetBorderTop()
+	return s
+}
+
 type Tui struct {
+	Tabs       []string
+	TabContent []string
+	styles     *styles
+	activeTab  int
 	listening bool
-	Query     string
-	Output string
 
-	sessions map[string]*session.Session
+	query string
 }
 
 func newTui() *Tui {
-	return &Tui{}
+	return &Tui{
+		styles: newStyles(true),
+	}
 }
 
-func (w *Tui) Init() tea.Cmd {
+func (t *Tui) Init() tea.Cmd {
 	return nil
 }
 
-func (w *Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	if msg == nil{
-		return w, nil
+func (t *Tui) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	if msg == nil {
+		return t, nil
 	}
 
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "ctrl+c":
-			return w, tea.Quit
-		case "m":
-			w.listening = !w.listening
-			return w, nil
+	case tea.KeyPressMsg:
+		switch keypress := msg.String(); keypress {
+		case "ctrl+c", "q":
+			return t, tea.Quit
+		case "right", "l", "n", "tab":
+			t.activeTab = min(t.activeTab+1, len(t.Tabs)-1)
+			return t, nil
+		case "left", "h", "p", "shift+tab":
+			t.activeTab = max(t.activeTab-1, 0)
+			return t, nil
 		}
 	}
 
-	return w, nil
+	return t, nil
 }
 
-func (w *Tui) View() string {
-	var builder strings.Builder
+func tabBorderWithBottom(left, middle, right string) lipgloss.Border {
+	border := lipgloss.RoundedBorder()
+	border.BottomLeft = left
+	border.Bottom = middle
+	border.BottomRight = right
+	return border
+}
 
-	title := "Roland\n"
-	var listening string
-
-	if w.listening {
-		listening = MutedStyle.Foreground(lipgloss.Color("7")).Render("Unmuted\n")
-	} else {
-		listening = MutedStyle.Foreground(lipgloss.Color("1")).Render("muted\n")
+func (t *Tui) View() tea.View {
+	if t.styles == nil {
+		return tea.NewView("")
 	}
 
-	builder.WriteString(TitleStyle.Render(title))
+	doc := strings.Builder{}
+	s := t.styles
 
-	builder.WriteString(listening)
+	var (
+		renderedTabs []string
+		row          string
+	)
+	if len(t.Tabs) > 1 {
+		for i, tab := range t.Tabs {
+			var style lipgloss.Style
+			isFirst, isLast, isActive := i == 0, i == len(t.Tabs)-1, i == t.activeTab
+			if isActive {
+				style = s.activeTab
+			} else {
+				style = s.inactiveTab
+			}
+			border, _, _, _, _ := style.GetBorder()
+			if isFirst && isActive {
+				border.BottomLeft = "│"
+			} else if isFirst && !isActive {
+				border.BottomLeft = "├"
+			} else if isLast && isActive {
+				border.BottomRight = "│"
+			} else if isLast && !isActive {
+				border.BottomRight = "┤"
+			}
+			style = style.Border(border)
+			renderedTabs = append(renderedTabs, style.Render(tab))
+		}
+	}
 
-	builder.WriteString(QueryStyle.Render(w.Query))
+	row = lipgloss.JoinHorizontal(lipgloss.Top, renderedTabs...)
 
-	builder.WriteString(OutputStyle.Render(w.Output))
-
-	return builder.String()
+	doc.WriteString(t.styles.query.Render(t.query))
+	doc.WriteString("\n")
+	doc.WriteString(row)
+	doc.WriteString("\n")
+	doc.WriteString(s.window.Width((lipgloss.Width(row))).Render(t.TabContent[t.activeTab]))
+	return tea.NewView(s.doc.Render(doc.String()))
 }
